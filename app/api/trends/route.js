@@ -3,7 +3,7 @@ export const revalidate = 0;
 
 const GNEWS_API_KEY = process.env.GNEWS_API_KEY || "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
-const GEMINI_MODEL = "gemini-2.0-flash";
+const GEMINI_MODEL = "gemini-2.5-flash";
 
 // STEP 1: Collect raw signals
 

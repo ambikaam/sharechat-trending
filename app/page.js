@@ -1,0 +1,316 @@
+"use client";
+
+import { useState, useEffect } from "react";
+
+const CATEGORIES = [
+  { id: "all", label: "सभी", emoji: "🔥", color: "#FF4500" },
+  { id: "खेल", label: "खेल", emoji: "🏏", color: "#3B82F6" },
+  { id: "मनोरंजन", label: "मनोरंजन", emoji: "🎬", color: "#8B5CF6" },
+  { id: "खबरें", label: "खबरें", emoji: "📰", color: "#EF4444" },
+  { id: "स्थानीय", label: "स्थानीय", emoji: "📍", color: "#10B981" },
+  { id: "त्योहार", label: "त्योहार", emoji: "🙏", color: "#F59E0B" },
+  { id: "म्यूज़िक", label: "म्यूज़िक", emoji: "🎵", color: "#EC4899" },
+  { id: "शिक्षा", label: "शिक्षा", emoji: "🎓", color: "#06B6D4" },
+  { id: "टेक्नोलॉजी", label: "टेक", emoji: "💻", color: "#6366F1" },
+];
+
+function HeatBar({ score, size = "md" }) {
+  const h = size === "lg" ? 8 : 5;
+  const getColor = (s) => {
+    if (s >= 90) return ["#FF4500", "#FF6B35"];
+    if (s >= 80) return ["#FF6B35", "#FFA500"];
+    if (s >= 70) return ["#FFA500", "#FFD700"];
+    return ["#FFD700", "#90EE90"];
+  };
+  const [c1, c2] = getColor(score);
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ width: size === "lg" ? 120 : 80, height: h, borderRadius: h, background: "rgba(255,255,255,0.08)", overflow: "hidden" }}>
+        <div style={{ width: `${score}%`, height: "100%", borderRadius: h, background: `linear-gradient(90deg, ${c1}, ${c2})`, transition: "width 1s cubic-bezier(0.22, 1, 0.36, 1)", boxShadow: `0 0 ${size === "lg" ? 12 : 8}px ${c1}50` }} />
+      </div>
+      <span style={{ fontSize: size === "lg" ? 18 : 13, fontWeight: 800, color: c1, fontVariantNumeric: "tabular-nums" }}>{score}</span>
+    </div>
+  );
+}
+
+function VelocityBadge({ velocity, label }) {
+  const config = {
+    rapid_rise: { icon: "⚡", bg: "rgba(255,69,0,0.15)", border: "rgba(255,69,0,0.3)", color: "#FF6B35" },
+    rising: { icon: "↑", bg: "rgba(16,185,129,0.12)", border: "rgba(16,185,129,0.25)", color: "#10B981" },
+    stable_high: { icon: "→", bg: "rgba(59,130,246,0.12)", border: "rgba(59,130,246,0.25)", color: "#60A5FA" },
+  };
+  const c = config[velocity] || config.rising;
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 4, padding: "3px 10px", borderRadius: 20, background: c.bg, border: `1px solid ${c.border}`, fontSize: 11, fontWeight: 600, color: c.color, whiteSpace: "nowrap" }}>
+      {c.icon} {label}
+    </span>
+  );
+}
+
+function SignalChip({ signal }) {
+  const colors = {
+    "Google Trends": { bg: "#4285f41a", color: "#4285F4" },
+    "GNews": { bg: "#ea43351a", color: "#EA4335" },
+    "GoogleNews": { bg: "#34a8531a", color: "#34A853" },
+    "News": { bg: "#ea43351a", color: "#EA4335" },
+    "YouTube": { bg: "#ff00001a", color: "#FF0000" },
+    "Social": { bg: "#1da1f21a", color: "#1DA1F2" },
+    "GoogleNewsRSS": { bg: "#34a8531a", color: "#34A853" },
+  };
+  const c = colors[signal] || { bg: "#6b728015", color: "#9CA3AF" };
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 12, background: c.bg, border: `1px solid ${c.color}30`, fontSize: 10, fontWeight: 600, color: c.color }}>
+      {signal}
+    </span>
+  );
+}
+
+function CategoryPill({ cat, isActive, onClick }) {
+  return (
+    <button onClick={onClick} style={{ display: "inline-flex", alignItems: "center", gap: 5, padding: "7px 16px", borderRadius: 24, background: isActive ? cat.color + "20" : "rgba(255,255,255,0.04)", border: `1.5px solid ${isActive ? cat.color + "60" : "rgba(255,255,255,0.08)"}`, color: isActive ? cat.color : "#9CA3AF", fontSize: 13, fontWeight: isActive ? 700 : 500, cursor: "pointer", whiteSpace: "nowrap", transition: "all 0.25s ease", outline: "none", flexShrink: 0 }}>
+      <span style={{ fontSize: 14 }}>{cat.emoji}</span>
+      {cat.label}
+    </button>
+  );
+}
+
+function TrendCard({ trend, index, onClick }) {
+  const [hovered, setHovered] = useState(false);
+  const isHero = index === 0;
+  const catObj = CATEGORIES.find((c) => c.id === trend.category) || CATEGORIES[0];
+  return (
+    <div onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{ background: isHero ? `linear-gradient(135deg, ${catObj.color}12, ${catObj.color}06, rgba(20,20,28,0.95))` : "rgba(255,255,255,0.025)", border: `1px solid ${isHero ? catObj.color + "30" : "rgba(255,255,255,0.06)"}`, borderRadius: 20, padding: isHero ? "22px 20px" : "16px 18px", cursor: "pointer", transition: "all 0.3s cubic-bezier(0.22, 1, 0.36, 1)", transform: hovered ? "translateY(-2px)" : "translateY(0)", boxShadow: hovered ? `0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px ${catObj.color}20` : "0 2px 8px rgba(0,0,0,0.1)", position: "relative", overflow: "hidden" }}>
+      {isHero && <div style={{ position: "absolute", top: -60, right: -60, width: 180, height: 180, borderRadius: "50%", background: `radial-gradient(circle, ${catObj.color}15, transparent 70%)`, pointerEvents: "none" }} />}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, position: "relative" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 11, fontWeight: 800, color: "#4B5563", background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "2px 8px" }}>#{index + 1}</span>
+          <span style={{ fontSize: 11, fontWeight: 700, color: catObj.color, background: catObj.color + "15", borderRadius: 12, padding: "3px 10px", display: "flex", alignItems: "center", gap: 3 }}>{catObj.emoji} {trend.category}</span>
+        </div>
+        <HeatBar score={trend.heat_score} size={isHero ? "lg" : "md"} />
+      </div>
+      <h3 style={{ fontSize: isHero ? 24 : 19, fontWeight: 800, color: "#F9FAFB", margin: "0 0 6px", lineHeight: 1.25 }}>{trend.tag}</h3>
+      <p style={{ fontSize: 14, color: "#B0B8C4", margin: "0 0 12px", lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{trend.description}</p>
+      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
+        <VelocityBadge velocity={trend.trend_velocity} label={trend.velocity_label} />
+        <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>{(trend.signals || []).map((s) => <SignalChip key={s} signal={s} />)}</div>
+      </div>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 10, paddingTop: 10, borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+        <span style={{ fontSize: 12, color: "#6B7280" }}>💬 {trend.discussing_count} लोग चर्चा कर रहे हैं</span>
+        <span style={{ fontSize: 11, color: "#6B7280" }}>{trend.posted_time}</span>
+      </div>
+    </div>
+  );
+}
+
+function TrendDetail({ trend, onBack }) {
+  const catObj = CATEGORIES.find((c) => c.id === trend.category) || CATEGORIES[0];
+  const [showFull, setShowFull] = useState(false);
+  return (
+    <div style={{ position: "fixed", inset: 0, background: "#0C0D12", zIndex: 100, overflowY: "auto", WebkitOverflowScrolling: "touch", animation: "slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1)" }}>
+      <div style={{ position: "sticky", top: 0, zIndex: 10, background: "linear-gradient(180deg, #0C0D12 80%, transparent)", padding: "16px 18px 24px", display: "flex", alignItems: "center", gap: 12 }}>
+        <button onClick={onBack} style={{ width: 40, height: 40, borderRadius: 14, background: "rgba(255,255,255,0.06)", border: "1px solid rgba(255,255,255,0.1)", color: "#E5E7EB", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", outline: "none" }}>←</button>
+        <div style={{ flex: 1 }}>
+          <span style={{ fontSize: 11, fontWeight: 700, color: catObj.color, background: catObj.color + "15", borderRadius: 12, padding: "3px 10px", display: "inline-flex", alignItems: "center", gap: 3 }}>{catObj.emoji} {trend.category}</span>
+        </div>
+        <HeatBar score={trend.heat_score} size="lg" />
+      </div>
+      <div style={{ padding: "0 18px 40px" }}>
+        <h1 style={{ fontSize: 32, fontWeight: 900, color: "#F9FAFB", margin: "0 0 6px", lineHeight: 1.15 }}>{trend.tag}</h1>
+        <p style={{ fontSize: 15, color: "#9CA3AF", margin: "0 0 6px", fontWeight: 500 }}>{trend.tagEn}</p>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "14px 0 20px" }}>
+          <VelocityBadge velocity={trend.trend_velocity} label={trend.velocity_label} />
+          <span style={{ fontSize: 13, color: "#6B7280" }}>💬 {trend.discussing_count} लोग</span>
+        </div>
+        <p style={{ fontSize: 16, color: "#D1D5DB", lineHeight: 1.65, margin: "0 0 24px" }}>{trend.description}</p>
+
+        {trend.why_trending && trend.why_trending.length > 0 && (
+          <div style={{ background: "linear-gradient(135deg, rgba(255,165,0,0.08), rgba(255,69,0,0.04))", border: "1px solid rgba(255,165,0,0.2)", borderRadius: 18, padding: "18px 18px 14px", marginBottom: 24 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: "#FFA500", marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 16 }}>🔍</span> यह क्यों ट्रेंड कर रहा है?
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              {trend.why_trending.map((reason, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, color: "#D1D5DB", lineHeight: 1.5 }}>
+                  <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{reason.icon}</span>
+                  <span>{reason.text}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {trend.summary && (
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, padding: 18, marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>✨ AI सारांश</div>
+            <p style={{ fontSize: 15, color: "#D1D5DB", lineHeight: 1.7, margin: 0 }}>
+              {showFull ? trend.summary : (trend.summary || "").substring(0, 140) + (trend.summary && trend.summary.length > 140 ? "..." : "")}
+            </p>
+            {trend.summary && trend.summary.length > 140 && (
+              <button onClick={(e) => { e.stopPropagation(); setShowFull(!showFull); }} style={{ background: "none", border: "none", color: "#60A5FA", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "8px 0 0", outline: "none" }}>
+                {showFull ? "कम दिखाएं ↑" : "पूरा पढ़ें ↓"}
+              </button>
+            )}
+          </div>
+        )}
+
+        <div style={{ marginBottom: 24 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>📡 सिग्नल स्रोत</div>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>{(trend.signals || []).map((s) => <SignalChip key={s} signal={s} />)}</div>
+        </div>
+
+        {trend.content_preview && (
+          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: 16, marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>📎 संबंधित कंटेंट</div>
+            <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.05)" }}>
+              <div style={{ fontSize: 15, fontWeight: 700, color: "#E5E7EB", marginBottom: 6, lineHeight: 1.4 }}>{trend.content_preview.title}</div>
+              <div style={{ fontSize: 12, color: "#6B7280", fontWeight: 500 }}>{trend.content_preview.source}</div>
+            </div>
+          </div>
+        )}
+
+        {trend.related_tags && trend.related_tags.length > 0 && (
+          <div>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>🔗 संबंधित ट्रेंड</div>
+            <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              {trend.related_tags.map((t) => (
+                <span key={t} style={{ padding: "6px 14px", borderRadius: 16, background: catObj.color + "10", border: `1px solid ${catObj.color}25`, color: catObj.color, fontSize: 13, fontWeight: 600 }}>{t}</span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div style={{ padding: "0 14px" }}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} style={{ background: "rgba(255,255,255,0.025)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 20, padding: "20px 18px", marginBottom: 12, animation: "pulse 1.5s ease-in-out infinite" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+            <div style={{ width: 80, height: 20, borderRadius: 10, background: "rgba(255,255,255,0.06)" }} />
+            <div style={{ width: 100, height: 16, borderRadius: 8, background: "rgba(255,255,255,0.06)" }} />
+          </div>
+          <div style={{ width: "70%", height: 22, borderRadius: 8, background: "rgba(255,255,255,0.06)", marginBottom: 8 }} />
+          <div style={{ width: "100%", height: 16, borderRadius: 8, background: "rgba(255,255,255,0.04)", marginBottom: 6 }} />
+          <div style={{ width: "85%", height: 16, borderRadius: 8, background: "rgba(255,255,255,0.04)" }} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export default function HomePage() {
+  const [trends, setTrends] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [meta, setMeta] = useState(null);
+  const [activeCategory, setActiveCategory] = useState("all");
+  const [selectedTrend, setSelectedTrend] = useState(null);
+  const [lastUpdated, setLastUpdated] = useState("");
+
+  useEffect(() => { fetchTrends(); }, []);
+
+  async function fetchTrends() {
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/trends", { cache: "no-store" });
+      if (!res.ok) throw new Error(`API returned ${res.status}`);
+      const data = await res.json();
+      setTrends(data.trends || []);
+      setMeta(data._meta || null);
+      const now = new Date();
+      const h = now.getHours() % 12 || 12;
+      const m = String(now.getMinutes()).padStart(2, "0");
+      setLastUpdated(`${h}:${m} ${now.getHours() >= 12 ? "PM" : "AM"}`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const filteredTrends = activeCategory === "all" ? trends : trends.filter((t) => t.category === activeCategory);
+  const sortedTrends = [...filteredTrends].sort((a, b) => b.heat_score - a.heat_score);
+
+  return (
+    <div style={{ background: "#0C0D12", minHeight: "100vh", maxWidth: 480, margin: "0 auto", position: "relative" }}>
+      <style>{`
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        ::-webkit-scrollbar { display: none; }
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        @keyframes slideUp { from { transform: translateY(100%); opacity: 0.8; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeInCard { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+      `}</style>
+
+      <div style={{ position: "sticky", top: 0, zIndex: 50, background: "linear-gradient(180deg, #0C0D12 0%, #0C0D12 85%, transparent 100%)", paddingBottom: 8 }}>
+        <div style={{ padding: "16px 18px 8px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 900, color: "#F9FAFB", display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ background: "linear-gradient(135deg, #FF4500, #FF6B35)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>🔥 ट्रेंडिंग</span>
+            </div>
+            <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2, fontWeight: 500 }}>भारत अभी किस बारे में बात कर रहा है</div>
+          </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "6px 12px", border: "1px solid rgba(255,255,255,0.06)" }}>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: meta?.source === "live" ? "#10B981" : "#F59E0B", boxShadow: `0 0 8px ${meta?.source === "live" ? "#10B98180" : "#F59E0B80"}`, animation: "pulse 2s ease-in-out infinite" }} />
+              <span style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600 }}>{meta?.source === "live" ? "LIVE" : "DEMO"} {lastUpdated && `\u2022 ${lastUpdated}`}</span>
+            </div>
+            <button onClick={() => fetchTrends()} disabled={loading} style={{ width: 36, height: 36, borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#9CA3AF", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", outline: "none", opacity: loading ? 0.5 : 1 }}>🔄</button>
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 8, padding: "8px 18px 4px", overflowX: "auto", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>
+          {CATEGORIES.map((cat) => <CategoryPill key={cat.id} cat={cat} isActive={activeCategory === cat.id} onClick={() => setActiveCategory(cat.id)} />)}
+        </div>
+      </div>
+
+      <div style={{ padding: "8px 14px 30px" }}>
+        {meta && (
+          <div style={{ fontSize: 11, color: "#4B5563", padding: "0 4px 8px" }}>
+            {meta.source === "live" ? `✅ लाइव — ${meta.articles_fetched} आर्टिकल्स से ${meta.trends_generated} ट्रेंड` : "⚠️ डेमो डेटा — API keys सेट करें लाइव ट्रेंड के लिए"}
+            {meta.duration_ms && ` \u2022 ${(meta.duration_ms / 1000).toFixed(1)}s`}
+          </div>
+        )}
+
+        {loading ? (
+          <div>
+            <div style={{ fontSize: 14, color: "#9CA3AF", textAlign: "center", padding: "20px 0 16px" }}>⏳ लाइव ट्रेंड लोड हो रहे हैं...</div>
+            <LoadingSkeleton />
+          </div>
+        ) : error ? (
+          <div style={{ textAlign: "center", padding: "60px 20px", color: "#EF4444" }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>⚠️</div>
+            <div style={{ fontSize: 15, marginBottom: 8 }}>ट्रेंड लोड करने में समस्या</div>
+            <div style={{ fontSize: 12, color: "#6B7280", marginBottom: 16 }}>{error}</div>
+            <button onClick={fetchTrends} style={{ padding: "10px 24px", borderRadius: 12, background: "#FF4500", border: "none", color: "white", fontSize: 14, fontWeight: 600, cursor: "pointer" }}>फिर से कोशिश करें</button>
+          </div>
+        ) : (
+          <>
+            <div style={{ fontSize: 12, color: "#6B7280", fontWeight: 600, padding: "0 4px 8px" }}>
+              {sortedTrends.length} ट्रेंड मिले{activeCategory !== "all" && ` — ${CATEGORIES.find((c) => c.id === activeCategory)?.label}`}
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {sortedTrends.map((trend, index) => (
+                <div key={trend.id || index} style={{ animation: `fadeInCard 0.45s cubic-bezier(0.22, 1, 0.36, 1) ${index * 50}ms both` }}>
+                  <TrendCard trend={trend} index={index} onClick={() => setSelectedTrend(trend)} />
+                </div>
+              ))}
+            </div>
+            {sortedTrends.length === 0 && (
+              <div style={{ textAlign: "center", padding: "60px 20px", color: "#6B7280", fontSize: 15 }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>🔍</div>इस कैटेगरी में कोई ट्रेंड नहीं मिला
+              </div>
+            )}
+          </>
+        )}
+        <div style={{ textAlign: "center", padding: "24px 16px 8px", fontSize: 11, color: "#4B5563", lineHeight: 1.6 }}>
+          ShareChat Trending Tags Prototype<br />APM Assignment | Built with AI-assisted development<br />Data refreshes on each invocation | Powered by GNews + Gemini Flash
+        </div>
+      </div>
+
+      {selectedTrend && <TrendDetail trend={selectedTrend} onBack={() => setSelectedTrend(null)} />}
+    </div>
+  );
+}

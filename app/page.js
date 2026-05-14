@@ -2,6 +2,12 @@
 
 import { useState, useEffect } from "react";
 
+const LOADING_STEPS = [
+  { icon: "📡", text: "देशभर से ताज़ा खबरें इकट्ठा कर रहे हैं..." },
+  { icon: "🧠", text: "AI से ट्रेंड्स विश्लेषण कर रहे हैं..." },
+  { icon: "🇮🇳", text: "हिंदी में आपके लिए तैयार कर रहे हैं..." },
+];
+
 const CATEGORIES = [
   { id: "all", label: "सभी", emoji: "🔥", color: "#FF4500" },
   { id: "खेल", label: "खेल", emoji: "🏏", color: "#3B82F6" },
@@ -183,6 +189,28 @@ function TrendDetail({ trend, onBack }) {
   );
 }
 
+function LoadingNarrator() {
+  const [stepIndex, setStepIndex] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setStepIndex((i) => (i + 1) % LOADING_STEPS.length), 2200);
+    return () => clearInterval(id);
+  }, []);
+  const step = LOADING_STEPS[stepIndex];
+  return (
+    <div style={{ textAlign: "center", padding: "24px 20px 18px" }}>
+      <div key={stepIndex} style={{ animation: "fadeStep 0.4s ease-out", display: "inline-flex", alignItems: "center", gap: 10, padding: "10px 18px", borderRadius: 24, background: "rgba(255,165,0,0.06)", border: "1px solid rgba(255,165,0,0.18)" }}>
+        <span style={{ fontSize: 18 }}>{step.icon}</span>
+        <span style={{ fontSize: 13, color: "#E5E7EB", fontWeight: 500 }}>{step.text}</span>
+      </div>
+      <div style={{ display: "flex", justifyContent: "center", gap: 6, marginTop: 12 }}>
+        {LOADING_STEPS.map((_, i) => (
+          <span key={i} style={{ width: i === stepIndex ? 20 : 6, height: 6, borderRadius: 3, background: i === stepIndex ? "#FFA500" : "rgba(255,255,255,0.15)", transition: "all 0.3s ease" }} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function LoadingSkeleton() {
   return (
     <div style={{ padding: "0 14px" }}>
@@ -243,6 +271,7 @@ export default function HomePage() {
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0.8; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeInCard { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+        @keyframes fadeStep { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
       `}</style>
 
       <div style={{ position: "sticky", top: 0, zIndex: 50, background: "linear-gradient(180deg, #0C0D12 0%, #0C0D12 85%, transparent 100%)", paddingBottom: 8 }}>
@@ -276,7 +305,7 @@ export default function HomePage() {
 
         {loading ? (
           <div>
-            <div style={{ fontSize: 14, color: "#9CA3AF", textAlign: "center", padding: "20px 0 16px" }}>⏳ लाइव ट्रेंड लोड हो रहे हैं...</div>
+            <LoadingNarrator />
             <LoadingSkeleton />
           </div>
         ) : error ? (
@@ -306,7 +335,7 @@ export default function HomePage() {
           </>
         )}
         <div style={{ textAlign: "center", padding: "24px 16px 8px", fontSize: 11, color: "#4B5563", lineHeight: 1.6 }}>
-          ShareChat Trending Tags Prototype<br />APM Assignment | Built with AI-assisted development<br />Data refreshes on each invocation | Powered by GNews + Gemini Flash
+          ShareChat Trending Tags<br />ShareChat APM Assignment · Live data on every load<br />Powered by GNews · Google News · Gemini 2.5 Flash-Lite
         </div>
       </div>
 

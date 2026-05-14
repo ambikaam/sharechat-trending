@@ -145,4 +145,3 @@ app/
 ---
 
 _Built for the ShareChat APM assignment. Code, copy, scoring weights and UX decisions by Ambika Maheshwari._
-_Local setup: clone, `npm install`, copy `.env.example` → `.env.local` with `GNEWS_API_KEY` + `GEMINI_API_KEY`, then `npm run dev`._

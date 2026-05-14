@@ -342,7 +342,7 @@ export default function HomePage() {
           </>
         )}
         <div style={{ textAlign: "center", padding: "24px 16px 8px", fontSize: 11, color: "#4B5563", lineHeight: 1.6 }}>
-          ShareChat Trending Tags<br />Powered by GNews · Google News · Gemini 2.5 Flash
+          ShareChat Trending Tags<br />Powered by GNews · Google News · Gemini 2.5 Flash-Lite
         </div>
       </div>
 

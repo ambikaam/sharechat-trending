@@ -129,30 +129,16 @@ function TrendDetail({ trend, onBack }) {
         </div>
         <p style={{ fontSize: 16, color: "#D1D5DB", lineHeight: 1.65, margin: "0 0 24px" }}>{trend.description}</p>
 
-        {trend.why_trending && trend.why_trending.length > 0 && (
-          <div style={{ background: "linear-gradient(135deg, rgba(255,165,0,0.08), rgba(255,69,0,0.04))", border: "1px solid rgba(255,165,0,0.2)", borderRadius: 18, padding: "18px 18px 14px", marginBottom: 24 }}>
-            <div style={{ fontSize: 14, fontWeight: 800, color: "#FFA500", marginBottom: 14, display: "flex", alignItems: "center", gap: 6 }}>
-              <span style={{ fontSize: 16 }}>🔍</span> यह क्यों ट्रेंड कर रहा है?
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              {trend.why_trending.map((reason, i) => (
-                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: 10, fontSize: 14, color: "#D1D5DB", lineHeight: 1.5 }}>
-                  <span style={{ fontSize: 16, flexShrink: 0, marginTop: 1 }}>{reason.icon}</span>
-                  <span>{reason.text}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
         {trend.summary && (
-          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.06)", borderRadius: 18, padding: 18, marginBottom: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>✨ AI सारांश</div>
-            <p style={{ fontSize: 15, color: "#D1D5DB", lineHeight: 1.7, margin: 0 }}>
-              {showFull ? trend.summary : (trend.summary || "").substring(0, 140) + (trend.summary && trend.summary.length > 140 ? "..." : "")}
+          <div style={{ background: "linear-gradient(135deg, rgba(255,165,0,0.06), rgba(255,69,0,0.03))", border: "1px solid rgba(255,165,0,0.18)", borderRadius: 18, padding: 18, marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#FFA500", marginBottom: 12, textTransform: "uppercase", letterSpacing: "0.06em", display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 15 }}>✨</span> AI सारांश — यह क्यों ट्रेंड कर रहा है
+            </div>
+            <p style={{ fontSize: 15, color: "#E5E7EB", lineHeight: 1.75, margin: 0, whiteSpace: "pre-wrap" }}>
+              {showFull || trend.summary.length <= 220 ? trend.summary : trend.summary.substring(0, 220) + "..."}
             </p>
-            {trend.summary && trend.summary.length > 140 && (
-              <button onClick={(e) => { e.stopPropagation(); setShowFull(!showFull); }} style={{ background: "none", border: "none", color: "#60A5FA", fontSize: 13, fontWeight: 600, cursor: "pointer", padding: "8px 0 0", outline: "none" }}>
+            {trend.summary.length > 220 && (
+              <button onClick={(e) => { e.stopPropagation(); setShowFull(!showFull); }} style={{ background: "none", border: "none", color: "#FFA500", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: "10px 0 0", outline: "none" }}>
                 {showFull ? "कम दिखाएं ↑" : "पूरा पढ़ें ↓"}
               </button>
             )}
@@ -165,12 +151,22 @@ function TrendDetail({ trend, onBack }) {
         </div>
 
         {trend.content_preview && (
-          <div style={{ background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.08)", borderRadius: 18, padding: 16, marginBottom: 24 }}>
-            <div style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>📎 संबंधित कंटेंट</div>
-            <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ fontSize: 15, fontWeight: 700, color: "#E5E7EB", marginBottom: 6, lineHeight: 1.4 }}>{trend.content_preview.title}</div>
-              <div style={{ fontSize: 12, color: "#6B7280", fontWeight: 500 }}>{trend.content_preview.source}</div>
-            </div>
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ fontSize: 13, fontWeight: 700, color: "#9CA3AF", marginBottom: 10, textTransform: "uppercase", letterSpacing: "0.06em" }}>📎 संबंधित खबर</div>
+            {trend.content_preview.url ? (
+              <a href={trend.content_preview.url} target="_blank" rel="noopener noreferrer" style={{ display: "block", background: "rgba(255,255,255,0.03)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.08)", textDecoration: "none", transition: "all 0.2s ease" }} onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.06)"; e.currentTarget.style.borderColor = `${catObj.color}40`; }} onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(255,255,255,0.03)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#E5E7EB", marginBottom: 6, lineHeight: 1.4 }}>{trend.content_preview.title}</div>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontSize: 12, color: "#6B7280", fontWeight: 500 }}>{trend.content_preview.source}</span>
+                  <span style={{ fontSize: 12, color: catObj.color, fontWeight: 600 }}>पढ़ें ↗</span>
+                </div>
+              </a>
+            ) : (
+              <div style={{ background: "rgba(255,255,255,0.03)", borderRadius: 14, padding: "14px 16px", border: "1px solid rgba(255,255,255,0.05)" }}>
+                <div style={{ fontSize: 15, fontWeight: 700, color: "#E5E7EB", marginBottom: 6, lineHeight: 1.4 }}>{trend.content_preview.title}</div>
+                <div style={{ fontSize: 12, color: "#6B7280", fontWeight: 500 }}>{trend.content_preview.source}</div>
+              </div>
+            )}
           </div>
         )}
 
@@ -232,6 +228,7 @@ function LoadingSkeleton() {
 export default function HomePage() {
   const [trends, setTrends] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState(null);
   const [meta, setMeta] = useState(null);
   const [activeCategory, setActiveCategory] = useState("all");
@@ -241,7 +238,8 @@ export default function HomePage() {
   useEffect(() => { fetchTrends(); }, []);
 
   async function fetchTrends() {
-    setLoading(true);
+    if (trends.length > 0) setRefreshing(true);
+    else setLoading(true);
     setError(null);
     try {
       const res = await fetch("/api/trends", { cache: "no-store" });
@@ -257,6 +255,7 @@ export default function HomePage() {
       setError(err.message);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }
 
@@ -272,6 +271,7 @@ export default function HomePage() {
         @keyframes slideUp { from { transform: translateY(100%); opacity: 0.8; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeInCard { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeStep { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       `}</style>
 
       <div style={{ position: "sticky", top: 0, zIndex: 50, background: "linear-gradient(180deg, #0C0D12 0%, #0C0D12 85%, transparent 100%)", paddingBottom: 8 }}>
@@ -284,17 +284,17 @@ export default function HomePage() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
             {(() => {
-              const status = loading ? "loading" : meta?.source === "live" ? "live" : "demo";
-              const dotColor = status === "live" ? "#10B981" : status === "loading" ? "#60A5FA" : "#F59E0B";
-              const label = status === "live" ? "LIVE" : status === "loading" ? "\u0932\u094b\u0921 \u0939\u094b \u0930\u0939\u093e \u0939\u0948" : "DEMO";
+              const status = loading ? "loading" : refreshing ? "refreshing" : meta?.source === "live" ? "live" : "demo";
+              const dotColor = status === "live" ? "#10B981" : (status === "loading" || status === "refreshing") ? "#60A5FA" : "#F59E0B";
+              const label = status === "live" ? "LIVE" : status === "loading" ? "\u0932\u094b\u0921 \u0939\u094b \u0930\u0939\u093e \u0939\u0948" : status === "refreshing" ? "\u0905\u092a\u0921\u0947\u091f \u0939\u094b \u0930\u0939\u093e \u0939\u0948" : "DEMO";
               return (
                 <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "6px 12px", border: "1px solid rgba(255,255,255,0.06)" }}>
                   <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, boxShadow: `0 0 8px ${dotColor}80`, animation: "pulse 2s ease-in-out infinite" }} />
-                  <span style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600 }}>{label}{status !== "loading" && lastUpdated && ` \u2022 ${lastUpdated}`}</span>
+                  <span style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600 }}>{label}{status === "live" && lastUpdated && ` \u2022 ${lastUpdated}`}</span>
                 </div>
               );
             })()}
-            <button onClick={() => fetchTrends()} disabled={loading} style={{ width: 36, height: 36, borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#9CA3AF", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", outline: "none", opacity: loading ? 0.5 : 1 }}>🔄</button>
+            <button onClick={() => fetchTrends()} disabled={loading || refreshing} style={{ width: 36, height: 36, borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#9CA3AF", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", outline: "none", opacity: (loading || refreshing) ? 0.5 : 1 }}><span style={{ display: "inline-block", animation: refreshing ? "spin 1s linear infinite" : "none" }}>🔄</span></button>
           </div>
         </div>
         <div style={{ display: "flex", gap: 8, padding: "8px 18px 4px", overflowX: "auto", scrollbarWidth: "none", WebkitOverflowScrolling: "touch" }}>

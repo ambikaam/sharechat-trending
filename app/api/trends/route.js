@@ -132,7 +132,7 @@ function dedupeArticles(articles) {
 function buildPrompt(articles) {
   const today = new Date().toLocaleDateString("hi-IN", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
   const articlesSummary = articles
-    .map((a, i) => `${i + 1}. [${a.origin}/${a.category}] ${a.title} (Source: ${a.source})`)
+    .map((a, i) => `${i + 1}. [${a.origin}/${a.category}] ${a.title} (Source: ${a.source}${a.url ? `, URL: ${a.url}` : ""})`)
     .join("\n");
   return `You are a trending topics engine for ShareChat, India's leading Hindi social media platform. Audience: Hindi-speaking users across India — from metros (Mumbai, Delhi) to Tier 2+ cities (Lucknow, Patna, Indore, Jaipur).
 
@@ -171,18 +171,14 @@ Return ONLY valid JSON (no markdown, no backticks):
       "trend_velocity": "rising",
       "velocity_label": "बढ़ रहा है",
       "discussing_count": "X लाख or X हज़ार",
-      "why_trending": [
-        {"icon": "📰", "text": "Hindi reason 1"},
-        {"icon": "📈", "text": "Hindi reason 2"},
-        {"icon": "💬", "text": "Hindi reason 3"}
-      ],
-      "summary": "3-4 line Hindi summary — informative, colloquial",
+      "summary": "5-7 line detailed Hindi summary — colloquial, informative. MUST cover: (1) what's happening, (2) why this is trending right now (the trigger event), (3) why people care / impact, (4) any latest update or numbers. Write it like an engaging news brief for ShareChat readers, not a textbook.",
       "related_tags": ["#tag1", "#tag2", "#tag3", "#tag4"],
       "posted_time": "X मिनट/घंटे पहले",
       "content_preview": {
         "type": "news/sports/entertainment/education",
-        "title": "Most relevant Hindi article headline",
-        "source": "Source name"
+        "title": "Most relevant Hindi article headline from the input",
+        "source": "Source name from input",
+        "url": "EXACT URL of that source article from the input — copy verbatim, do not invent"
       }
     }
   ]
@@ -289,10 +285,10 @@ function getFallbackTrends() {
           { icon: "📈", text: "सर्च वॉल्यूम +420% पिछले 3 घंटों में" },
           { icon: "💬", text: "12+ news outlets में कवरेज" },
         ],
-        summary: "IPL 2026 का RCB vs CSK मैच आज सबसे ज़्यादा चर्चा में है। प्लेऑफ़ की रेस में दोनों टीमों के लिए यह मुक़ाबला निर्णायक होगा। विराट और धोनी की मौजूदगी से क्रेज़ और बढ़ गया है।",
+        summary: "आज शाम बेंगलुरु में RCB और CSK का बड़ा मुक़ाबला है — IPL 2026 की प्लेऑफ़ रेस में दोनों टीमों के लिए यह मैच निर्णायक है। पिछले 3 घंटों में इस ट्रेंड का सर्च वॉल्यूम +420% बढ़ा है और 12+ news outlets इसे cover कर रहे हैं। विराट कोहली vs एमएस धोनी की राइवलरी इस मैच की USP है — टिकट सब बिक चुके हैं और सोशल मीडिया पर 8 लाख से ज़्यादा लोग इस पर पोस्ट कर रहे हैं।",
         related_tags: ["#RCBvsCSK", "#ViratKohli", "#Dhoni", "#Cricket"],
         posted_time: "1 घंटा पहले",
-        content_preview: { type: "sports", title: "RCB vs CSK Live: टॉस के बाद टीमें और पिच रिपोर्ट", source: "Cricbuzz Hindi" },
+        content_preview: { type: "sports", title: "RCB vs CSK Live: टॉस के बाद टीमें और पिच रिपोर्ट", source: "Cricbuzz Hindi", url: "https://www.google.com/search?q=RCB+vs+CSK+IPL+2026" },
       },
       {
         id: 2, tag: "#SalmanKhan", tagEn: "#SalmanKhan",
@@ -308,7 +304,7 @@ function getFallbackTrends() {
         summary: "सलमान खान की 'सिकंदर' का ट्रेलर आज जारी हुआ और चंद घंटों में सोशल मीडिया पर छा गया। ईद 2026 पर रिलीज़ हो रही इस फ़िल्म के एक्शन सीन और सलमान का लुक चर्चा का विषय हैं।",
         related_tags: ["#Sikandar", "#Eid2026", "#Bollywood", "#Trailer"],
         posted_time: "3 घंटे पहले",
-        content_preview: { type: "entertainment", title: "Sikandar Trailer: सलमान का दमदार लुक, रिलीज़ डेट कन्फ़र्म", source: "Filmfare Hindi" },
+        content_preview: { type: "entertainment", title: "Sikandar Trailer: सलमान का दमदार लुक, रिलीज़ डेट कन्फ़र्म", source: "Filmfare Hindi", url: "https://www.google.com/search?q=Salman+Khan+Sikandar+trailer" },
       },
       {
         id: 3, tag: "#RBIRepoRate", tagEn: "#RBIRepoRate",
@@ -324,7 +320,7 @@ function getFallbackTrends() {
         summary: "RBI ने आज MPC मीटिंग में repo rate 25 basis points घटाकर 6% कर दिया। इससे होम लोन, कार लोन और पर्सनल लोन की EMI में राहत मिलेगी। बैंकिंग और रियल एस्टेट स्टॉक्स में तेज़ी देखी जा रही है।",
         related_tags: ["#RBI", "#HomeLoan", "#Banking", "#Economy"],
         posted_time: "2 घंटे पहले",
-        content_preview: { type: "news", title: "RBI Repo Rate Cut: आपकी EMI कितनी घटेगी? पूरा हिसाब", source: "Economic Times Hindi" },
+        content_preview: { type: "news", title: "RBI Repo Rate Cut: आपकी EMI कितनी घटेगी? पूरा हिसाब", source: "Economic Times Hindi", url: "https://www.google.com/search?q=RBI+repo+rate+cut+India" },
       },
       {
         id: 4, tag: "#UPBoardResult", tagEn: "#UPBoardResult",
@@ -340,7 +336,7 @@ function getFallbackTrends() {
         summary: "UP Board ने आज दोपहर 2 बजे 10वीं और 12वीं का रिज़ल्ट जारी कर दिया। 55 लाख से ज़्यादा छात्रों ने एग्ज़ाम दिया था। upmsp.edu.in और results.upmsp.edu.in पर अपना रोल नंबर डालकर रिज़ल्ट देख सकते हैं।",
         related_tags: ["#UPBoard", "#Result2026", "#Education", "#10thResult"],
         posted_time: "30 मिनट पहले",
-        content_preview: { type: "education", title: "UP Board Result 2026: ये रहा सीधा लिंक, टॉपर्स की लिस्ट", source: "Aaj Tak" },
+        content_preview: { type: "education", title: "UP Board Result 2026: ये रहा सीधा लिंक, टॉपर्स की लिस्ट", source: "Aaj Tak", url: "https://www.google.com/search?q=UP+Board+Result+2026" },
       },
       {
         id: 5, tag: "#ArijitSingh", tagEn: "#ArijitSingh",
@@ -356,7 +352,7 @@ function getFallbackTrends() {
         summary: "अरिजीत सिंह का नया सॉन्ग आज रिलीज़ हुआ और Spotify India पर तुरंत ट्रेंडिंग #1 पर पहुँच गया। रोमांटिक मेलोडी और गहरे लिरिक्स की वजह से रील्स पर भी तेज़ी से वायरल हो रहा है।",
         related_tags: ["#NewSong", "#Bollywood", "#Music", "#Spotify"],
         posted_time: "5 घंटे पहले",
-        content_preview: { type: "entertainment", title: "Arijit Singh का नया गाना: सुनते ही दिल को छू जाएगा", source: "T-Series" },
+        content_preview: { type: "entertainment", title: "Arijit Singh का नया गाना: सुनते ही दिल को छू जाएगा", source: "T-Series", url: "https://www.google.com/search?q=Arijit+Singh+new+song" },
       },
       {
         id: 6, tag: "#PetrolPrice", tagEn: "#PetrolPrice",
@@ -372,7 +368,7 @@ function getFallbackTrends() {
         summary: "ऑयल कंपनियों ने आज पेट्रोल और डीज़ल के दाम में प्रति लीटर ₹2 की कटौती की। यह कटौती आज सुबह 6 बजे से लागू हो गई। दिल्ली में पेट्रोल ₹94.72 और डीज़ल ₹87.62 प्रति लीटर पर मिल रहा है।",
         related_tags: ["#FuelPrice", "#Petrol", "#Diesel", "#Economy"],
         posted_time: "4 घंटे पहले",
-        content_preview: { type: "news", title: "Petrol-Diesel Price: आपके शहर में आज का रेट", source: "NDTV India" },
+        content_preview: { type: "news", title: "Petrol-Diesel Price: आपके शहर में आज का रेट", source: "NDTV India", url: "https://www.google.com/search?q=petrol+diesel+price+India+today" },
       },
       {
         id: 7, tag: "#ShraddhaKapoor", tagEn: "#ShraddhaKapoor",
@@ -388,7 +384,7 @@ function getFallbackTrends() {
         summary: "श्रद्धा कपूर ने Instagram पर 100 मिलियन followers का आँकड़ा पार कर लिया है। यह कमाल करने वाली वे तीसरी भारतीय एक्ट्रेस बन गई हैं। स्त्री 3 की अनाउंसमेंट के बाद से उनकी popularity और बढ़ी है।",
         related_tags: ["#Stree3", "#Instagram", "#Bollywood", "#100M"],
         posted_time: "6 घंटे पहले",
-        content_preview: { type: "entertainment", title: "Shraddha Kapoor: 100M followers क्लब में शामिल", source: "Pinkvilla" },
+        content_preview: { type: "entertainment", title: "Shraddha Kapoor: 100M followers क्लब में शामिल", source: "Pinkvilla", url: "https://www.google.com/search?q=Shraddha+Kapoor+100M+Instagram" },
       },
       {
         id: 8, tag: "#GuruPurnima", tagEn: "#GuruPurnima",
@@ -404,7 +400,7 @@ function getFallbackTrends() {
         summary: "आज पूरे देश में गुरु पूर्णिमा का पावन पर्व मनाया जा रहा है। मंदिरों, आश्रमों और शिक्षण संस्थानों में विशेष पूजा-अर्चना हो रही है। सोशल मीडिया पर गुरुओं को सम्मान देने वाले मैसेज और कोट्स ट्रेंड कर रहे हैं।",
         related_tags: ["#Festival", "#Spiritual", "#India", "#Tradition"],
         posted_time: "8 घंटे पहले",
-        content_preview: { type: "news", title: "Guru Purnima 2026: शुभ मुहूर्त, पूजा विधि और महत्व", source: "Dainik Jagran" },
+        content_preview: { type: "news", title: "Guru Purnima 2026: शुभ मुहूर्त, पूजा विधि और महत्व", source: "Dainik Jagran", url: "https://www.google.com/search?q=Guru+Purnima+2026" },
       },
       {
         id: 9, tag: "#MumbaiRains", tagEn: "#MumbaiRains",
@@ -420,7 +416,7 @@ function getFallbackTrends() {
         summary: "मुंबई में पिछले 24 घंटों में रिकॉर्ड बारिश दर्ज की गई है। कई इलाक़ों में जलभराव, लोकल ट्रेनें देर से चल रही हैं। BMC ने स्कूल बंद करने का आदेश दिया है। IMD ने अगले 48 घंटों के लिए रेड अलर्ट जारी किया है।",
         related_tags: ["#Mumbai", "#Monsoon", "#Weather", "#RedAlert"],
         posted_time: "45 मिनट पहले",
-        content_preview: { type: "news", title: "Mumbai Rains Live: कहाँ-कहाँ जलभराव, ट्रेन अपडेट", source: "Mumbai Mirror" },
+        content_preview: { type: "news", title: "Mumbai Rains Live: कहाँ-कहाँ जलभराव, ट्रेन अपडेट", source: "Mumbai Mirror", url: "https://www.google.com/search?q=Mumbai+rains+live+updates" },
       },
       {
         id: 10, tag: "#SarkariNaukri", tagEn: "#SarkariNaukri",
@@ -436,7 +432,7 @@ function getFallbackTrends() {
         summary: "Indian Railways ने ग्रुप D के 25,000 पदों के लिए notification जारी किया है। 10वीं पास युवा आवेदन कर सकते हैं। rrbcdg.gov.in पर ऑनलाइन फॉर्म भरा जा सकता है। उत्तर प्रदेश और बिहार के युवाओं में सबसे ज़्यादा क्रेज़ है।",
         related_tags: ["#Railway", "#GovtJobs", "#RRB", "#Recruitment"],
         posted_time: "10 घंटे पहले",
-        content_preview: { type: "education", title: "Railway Group D Vacancy 2026: कैसे करें apply", source: "Sarkari Result" },
+        content_preview: { type: "education", title: "Railway Group D Vacancy 2026: कैसे करें apply", source: "Sarkari Result", url: "https://www.google.com/search?q=Railway+Group+D+Vacancy+2026" },
       },
       {
         id: 11, tag: "#iPhone17", tagEn: "#iPhone17",
@@ -452,7 +448,7 @@ function getFallbackTrends() {
         summary: "Apple ने iPhone 17 की भारत में लॉन्च डेट कन्फ़र्म कर दी है। लीक्स के मुताबिक स्टैंडर्ड मॉडल की कीमत ₹79,900 से शुरू होगी। टाइटेनियम बॉडी, A19 चिप और बेहतर कैमरा सिस्टम मुख्य आकर्षण हैं।",
         related_tags: ["#Apple", "#iPhone", "#Tech", "#Launch"],
         posted_time: "7 घंटे पहले",
-        content_preview: { type: "news", title: "iPhone 17 India Price: सबसे सस्ता और महंगा मॉडल", source: "Gadgets360 Hindi" },
+        content_preview: { type: "news", title: "iPhone 17 India Price: सबसे सस्ता और महंगा मॉडल", source: "Gadgets360 Hindi", url: "https://www.google.com/search?q=iPhone+17+India+launch+price" },
       },
       {
         id: 12, tag: "#KaunBanegaCrorepati", tagEn: "#KBC16",
@@ -468,7 +464,7 @@ function getFallbackTrends() {
         summary: "कौन बनेगा करोड़पति 16 के कल के एपिसोड में बिहार के एक स्कूल टीचर ने ₹1 करोड़ जीते। उनकी प्रेरणादायक कहानी और अमिताभ बच्चन के साथ इमोशनल पल सोशल मीडिया पर ख़ूब वायरल हो रहे हैं।",
         related_tags: ["#KBC", "#AmitabhBachchan", "#SonyTV", "#GameShow"],
         posted_time: "12 घंटे पहले",
-        content_preview: { type: "entertainment", title: "KBC 16: बिहार के टीचर ने रचा इतिहास, जीते ₹1 करोड़", source: "Sony Entertainment" },
+        content_preview: { type: "entertainment", title: "KBC 16: बिहार के टीचर ने रचा इतिहास, जीते ₹1 करोड़", source: "Sony Entertainment", url: "https://www.google.com/search?q=KBC+16+1+crore+winner" },
       },
     ],
   };

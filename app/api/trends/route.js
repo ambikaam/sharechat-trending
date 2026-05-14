@@ -5,6 +5,14 @@ const GNEWS_API_KEY = process.env.GNEWS_API_KEY || "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const GEMINI_MODEL = "gemini-2.5-flash";
 
+const GNEWS_CATEGORIES = ["general", "sports", "entertainment", "technology", "business"];
+const GNEWS_PER_CATEGORY = 5;
+const RSS_PER_FEED = 8;
+const MAX_ARTICLES_TO_LLM = 25;
+const GEMINI_TIMEOUT_MS = 25000;
+const RSS_TIMEOUT_MS = 5000;
+const GNEWS_TIMEOUT_MS = 5000;
+
 // STEP 1: Collect raw signals
 
 async function fetchGNewsCategory(category) {

@@ -283,10 +283,17 @@ export default function HomePage() {
             <div style={{ fontSize: 12, color: "#6B7280", marginTop: 2, fontWeight: 500 }}>भारत अभी किस बारे में बात कर रहा है</div>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "6px 12px", border: "1px solid rgba(255,255,255,0.06)" }}>
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: meta?.source === "live" ? "#10B981" : "#F59E0B", boxShadow: `0 0 8px ${meta?.source === "live" ? "#10B98180" : "#F59E0B80"}`, animation: "pulse 2s ease-in-out infinite" }} />
-              <span style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600 }}>{meta?.source === "live" ? "LIVE" : "DEMO"} {lastUpdated && `\u2022 ${lastUpdated}`}</span>
-            </div>
+            {(() => {
+              const status = loading ? "loading" : meta?.source === "live" ? "live" : "demo";
+              const dotColor = status === "live" ? "#10B981" : status === "loading" ? "#60A5FA" : "#F59E0B";
+              const label = status === "live" ? "LIVE" : status === "loading" ? "\u0932\u094b\u0921 \u0939\u094b \u0930\u0939\u093e \u0939\u0948" : "DEMO";
+              return (
+                <div style={{ display: "flex", alignItems: "center", gap: 6, background: "rgba(255,255,255,0.04)", borderRadius: 12, padding: "6px 12px", border: "1px solid rgba(255,255,255,0.06)" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor, boxShadow: `0 0 8px ${dotColor}80`, animation: "pulse 2s ease-in-out infinite" }} />
+                  <span style={{ fontSize: 11, color: "#9CA3AF", fontWeight: 600 }}>{label}{status !== "loading" && lastUpdated && ` \u2022 ${lastUpdated}`}</span>
+                </div>
+              );
+            })()}
             <button onClick={() => fetchTrends()} disabled={loading} style={{ width: 36, height: 36, borderRadius: 12, background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.06)", color: "#9CA3AF", fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", outline: "none", opacity: loading ? 0.5 : 1 }}>🔄</button>
           </div>
         </div>

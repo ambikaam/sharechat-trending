@@ -1,9 +1,12 @@
+import { CATEGORY_POOL } from "./pool";
+
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const GNEWS_API_KEY = process.env.GNEWS_API_KEY || "";
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || "";
 const GEMINI_MODEL = "gemini-2.5-flash-lite";
+const TARGET_PER_CATEGORY = 2;
 
 const GNEWS_CATEGORIES = ["general", "sports", "entertainment", "technology", "business"];
 const GNEWS_PER_CATEGORY = 5;
@@ -153,6 +156,7 @@ RULES:
 6. Categories MUST be one of: खेल, मनोरंजन, खबरें, स्थानीय, त्योहार, म्यूज़िक, शिक्षा, टेक्नोलॉजी.
 7. trend_velocity: "rapid_rise" | "rising" | "stable_high".
 8. velocity_label: "तेज़ी से बढ़ रहा" (rapid_rise) | "बढ़ रहा है" (rising) | "स्थिर — चर्चा में" (stable_high).
+9. CATEGORY DIVERSITY: aim for at least 1 trend from each of these categories when relevant headlines exist — खेल, मनोरंजन, खबरें, स्थानीय, त्योहार, म्यूज़िक, शिक्षा, टेक्नोलॉजी. Don't over-weight one bucket (e.g., not 8 out of 10 trends from cricket alone).
 
 Return ONLY valid JSON (no markdown, no backticks):
 
@@ -320,6 +324,29 @@ function validateAndFixUrls(geminiResult, inputArticles) {
   });
   console.log(`URL validation: ${kept} kept verbatim, ${matched} matched by title, ${dropped} hidden (no source URL)`);
   return geminiResult;
+}
+
+// STEP 2.5: Gap-fill empty categories from rotating pool
+
+function topUpEmptyCategories(trends) {
+  const counts = new Map();
+  trends.forEach((t) => counts.set(t.category, (counts.get(t.category) || 0) + 1));
+  const offset = Math.floor(Date.now() / 60_000);
+  const added = [];
+  Object.keys(CATEGORY_POOL).forEach((category) => {
+    const have = counts.get(category) || 0;
+    const need = Math.max(0, TARGET_PER_CATEGORY - have);
+    if (need === 0) return;
+    const pool = CATEGORY_POOL[category];
+    for (let i = 0; i < need && i < pool.length; i++) {
+      const item = pool[(offset + i) % pool.length];
+      added.push({ ...item, _source: "pool" });
+    }
+  });
+  if (added.length > 0) {
+    console.log(`Pool fill: added ${added.length} items across ${new Set(added.map((a) => a.category)).size} categories (offset=${offset})`);
+  }
+  return [...trends, ...added];
 }
 
 // STEP 3: Fallback (12 rich trends, schema-matched)
@@ -556,6 +583,8 @@ export async function GET() {
     const geminiResultRaw = await processWithGemini(allArticles);
     const geminiResult = validateAndFixUrls(geminiResultRaw, allArticles);
     if (geminiResult && geminiResult.trends && geminiResult.trends.length > 0) {
+      geminiResult.trends = topUpEmptyCategories(geminiResult.trends);
+      const poolUsed = geminiResult.trends.filter((t) => t._source === "pool").length;
       geminiResult.trends = geminiResult.trends.map((t, i) => ({ ...t, id: i + 1 }));
       return Response.json({
         ...geminiResult,
@@ -563,6 +592,7 @@ export async function GET() {
           source: "live",
           articles_fetched: allArticles.length,
           trends_generated: geminiResult.trends.length,
+          pool_used: poolUsed,
           duration_ms: Date.now() - startTime,
         },
       });

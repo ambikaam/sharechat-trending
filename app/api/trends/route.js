@@ -267,6 +267,61 @@ async function processWithGemini(rawArticles) {
   }
 }
 
+function normalizeForMatch(s) {
+  return (s || "").toLowerCase().replace(/[^\p{L}\p{N} ]/gu, "").trim();
+}
+
+function tokenize(s) {
+  return normalizeForMatch(s).split(/\s+/).filter((w) => w.length > 3);
+}
+
+function findBestMatchingArticle(preview, tag, articles) {
+  const candidates = articles.filter((a) => a.url);
+  if (candidates.length === 0) return null;
+  const previewTokens = new Set(tokenize(preview?.title));
+  const tagTokens = new Set(tokenize(tag));
+  let best = null;
+  let bestScore = 0;
+  for (const article of candidates) {
+    const articleTokens = new Set(tokenize(article.title));
+    let score = 0;
+    for (const t of previewTokens) if (articleTokens.has(t)) score += 2;
+    for (const t of tagTokens) if (articleTokens.has(t)) score += 1;
+    if (score > bestScore) {
+      bestScore = score;
+      best = article;
+    }
+  }
+  return bestScore >= 2 ? best : null;
+}
+
+function validateAndFixUrls(geminiResult, inputArticles) {
+  if (!geminiResult?.trends) return geminiResult;
+  const validUrls = new Set(inputArticles.map((a) => a.url).filter(Boolean));
+  let matched = 0, kept = 0, dropped = 0;
+  geminiResult.trends.forEach((t) => {
+    const preview = t.content_preview;
+    if (!preview) return;
+    const candidate = preview.url;
+    const claimedByGemini = candidate && typeof candidate === "string" && /^https?:\/\//i.test(candidate);
+    if (claimedByGemini && validUrls.has(candidate)) {
+      kept++;
+      return;
+    }
+    const match = findBestMatchingArticle(preview, t.tagEn || t.tag, inputArticles);
+    if (match) {
+      preview.url = match.url;
+      preview.source = match.source || preview.source;
+      matched++;
+    } else {
+      preview.url = null;
+      dropped++;
+    }
+  });
+  console.log(`URL validation: ${kept} kept verbatim, ${matched} matched by title, ${dropped} hidden (no source URL)`);
+  return geminiResult;
+}
+
 // STEP 3: Fallback (12 rich trends, schema-matched)
 
 function getFallbackTrends() {
@@ -498,7 +553,8 @@ export async function GET() {
       });
     }
 
-    const geminiResult = await processWithGemini(allArticles);
+    const geminiResultRaw = await processWithGemini(allArticles);
+    const geminiResult = validateAndFixUrls(geminiResultRaw, allArticles);
     if (geminiResult && geminiResult.trends && geminiResult.trends.length > 0) {
       geminiResult.trends = geminiResult.trends.map((t, i) => ({ ...t, id: i + 1 }));
       return Response.json({

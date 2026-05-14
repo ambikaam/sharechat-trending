@@ -80,7 +80,7 @@ function CategoryPill({ cat, isActive, onClick }) {
   );
 }
 
-function TrendCard({ trend, index, onClick }) {
+function TrendCard({ trend, index, onClick, onCopy }) {
   const [hovered, setHovered] = useState(false);
   const isHero = index === 0;
   const catObj = CATEGORIES.find((c) => c.id === trend.category) || CATEGORIES[0];
@@ -88,13 +88,16 @@ function TrendCard({ trend, index, onClick }) {
     <div onClick={onClick} onMouseEnter={() => setHovered(true)} onMouseLeave={() => setHovered(false)} style={{ background: isHero ? `linear-gradient(135deg, ${catObj.color}12, ${catObj.color}06, rgba(20,20,28,0.95))` : "rgba(255,255,255,0.025)", border: `1px solid ${isHero ? catObj.color + "30" : "rgba(255,255,255,0.06)"}`, borderRadius: 20, padding: isHero ? "22px 20px" : "16px 18px", cursor: "pointer", transition: "all 0.3s cubic-bezier(0.22, 1, 0.36, 1)", transform: hovered ? "translateY(-2px)" : "translateY(0)", boxShadow: hovered ? `0 8px 32px rgba(0,0,0,0.3), 0 0 0 1px ${catObj.color}20` : "0 2px 8px rgba(0,0,0,0.1)", position: "relative", overflow: "hidden" }}>
       {isHero && <div style={{ position: "absolute", top: -60, right: -60, width: 180, height: 180, borderRadius: "50%", background: `radial-gradient(circle, ${catObj.color}15, transparent 70%)`, pointerEvents: "none" }} />}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 10, position: "relative" }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
           <span style={{ fontSize: 11, fontWeight: 800, color: "#4B5563", background: "rgba(255,255,255,0.06)", borderRadius: 8, padding: "2px 8px" }}>#{index + 1}</span>
           <span style={{ fontSize: 11, fontWeight: 700, color: catObj.color, background: catObj.color + "15", borderRadius: 12, padding: "3px 10px", display: "flex", alignItems: "center", gap: 3 }}>{catObj.emoji} {trend.category}</span>
+          <MovementBadge movement={trend.movement} />
         </div>
         <HeatBar score={trend.heat_score} size={isHero ? "lg" : "md"} />
       </div>
-      <h3 style={{ fontSize: isHero ? 24 : 19, fontWeight: 800, color: "#F9FAFB", margin: "0 0 6px", lineHeight: 1.25 }}>{trend.tag}</h3>
+      <h3 style={{ fontSize: isHero ? 24 : 19, fontWeight: 800, color: "#F9FAFB", margin: "0 0 6px", lineHeight: 1.25 }}>
+        <CopyableHashtag tag={trend.tag} onCopy={onCopy} style={{ color: "inherit" }} />
+      </h3>
       <p style={{ fontSize: 14, color: "#B0B8C4", margin: "0 0 12px", lineHeight: 1.55, display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{trend.description}</p>
       <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8 }}>
         <VelocityBadge velocity={trend.trend_velocity} label={trend.velocity_label} />
@@ -108,7 +111,7 @@ function TrendCard({ trend, index, onClick }) {
   );
 }
 
-function TrendDetail({ trend, onBack }) {
+function TrendDetail({ trend, onBack, onCopy }) {
   const catObj = CATEGORIES.find((c) => c.id === trend.category) || CATEGORIES[0];
   const [showFull, setShowFull] = useState(false);
   return (
@@ -121,11 +124,17 @@ function TrendDetail({ trend, onBack }) {
         <HeatBar score={trend.heat_score} size="lg" />
       </div>
       <div style={{ padding: "0 18px 40px" }}>
-        <h1 style={{ fontSize: 32, fontWeight: 900, color: "#F9FAFB", margin: "0 0 6px", lineHeight: 1.15 }}>{trend.tag}</h1>
+        <h1 style={{ fontSize: 32, fontWeight: 900, color: "#F9FAFB", margin: "0 0 6px", lineHeight: 1.15 }}>
+          <CopyableHashtag tag={trend.tag} onCopy={onCopy} style={{ color: "inherit" }} />
+        </h1>
         <p style={{ fontSize: 15, color: "#9CA3AF", margin: "0 0 6px", fontWeight: 500 }}>{trend.tagEn}</p>
-        <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "14px 0 20px" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "14px 0 20px", flexWrap: "wrap" }}>
           <VelocityBadge velocity={trend.trend_velocity} label={trend.velocity_label} />
           <span style={{ fontSize: 13, color: "#6B7280" }}>💬 {trend.discussing_count} लोग</span>
+          <MovementBadge movement={trend.movement} />
+        </div>
+        <div style={{ marginBottom: 24 }}>
+          <WhatsAppShareButton trend={trend} />
         </div>
         <p style={{ fontSize: 16, color: "#D1D5DB", lineHeight: 1.65, margin: "0 0 24px" }}>{trend.description}</p>
 
@@ -185,6 +194,70 @@ function TrendDetail({ trend, onBack }) {
   );
 }
 
+function Toast({ message, onDone }) {
+  useEffect(() => {
+    const id = setTimeout(onDone, 2000);
+    return () => clearTimeout(id);
+  }, [onDone]);
+  return (
+    <div style={{ position: "fixed", left: "50%", bottom: 30, transform: "translateX(-50%)", background: "rgba(20,20,28,0.95)", backdropFilter: "blur(10px)", border: "1px solid rgba(255,255,255,0.1)", color: "#F9FAFB", padding: "10px 18px", borderRadius: 14, fontSize: 13, fontWeight: 600, zIndex: 200, animation: "toastIn 0.25s ease-out", boxShadow: "0 8px 24px rgba(0,0,0,0.4)", whiteSpace: "nowrap" }}>
+      {message}
+    </div>
+  );
+}
+
+function CopyableHashtag({ tag, onCopy, style }) {
+  return (
+    <span
+      onClick={(e) => {
+        e.stopPropagation();
+        navigator.clipboard?.writeText(tag);
+        onCopy(`हैशटैग कॉपी हो गया ✓`);
+      }}
+      title="कॉपी करें"
+      style={{ cursor: "pointer", ...style }}
+    >
+      {tag}
+    </span>
+  );
+}
+
+function WhatsAppShareButton({ trend }) {
+  const text = `🔥 ${trend.tag} ट्रेंडिंग है ShareChat पर!\n\n${trend.description}\n\nऔर ट्रेंड्स देखें: https://sharechat-trending.vercel.app`;
+  const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => e.stopPropagation()}
+      style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "12px 20px", borderRadius: 14, background: "linear-gradient(135deg, #25D366, #128C7E)", color: "white", fontSize: 14, fontWeight: 700, textDecoration: "none", boxShadow: "0 4px 16px rgba(37,211,102,0.3)", transition: "transform 0.15s ease" }}
+      onMouseEnter={(e) => (e.currentTarget.style.transform = "translateY(-1px)")}
+      onMouseLeave={(e) => (e.currentTarget.style.transform = "translateY(0)")}
+    >
+      <span style={{ fontSize: 16 }}>💬</span> WhatsApp पर शेयर करें
+    </a>
+  );
+}
+
+function MovementBadge({ movement }) {
+  if (!movement || movement === "same") return null;
+  if (movement === "new") {
+    return (
+      <span style={{ display: "inline-flex", alignItems: "center", padding: "2px 8px", borderRadius: 10, background: "linear-gradient(135deg, #FF4500, #FF6B35)", color: "white", fontSize: 10, fontWeight: 800, letterSpacing: "0.04em", animation: "pulse 2s ease-in-out infinite" }}>
+        ✨ नया
+      </span>
+    );
+  }
+  const isUp = movement.startsWith("up_");
+  const n = parseInt(movement.split("_")[1], 10);
+  return (
+    <span style={{ display: "inline-flex", alignItems: "center", gap: 2, padding: "2px 7px", borderRadius: 10, background: isUp ? "rgba(16,185,129,0.15)" : "rgba(239,68,68,0.12)", color: isUp ? "#10B981" : "#EF4444", fontSize: 10, fontWeight: 800, border: `1px solid ${isUp ? "rgba(16,185,129,0.3)" : "rgba(239,68,68,0.25)"}` }}>
+      {isUp ? "↑" : "↓"}{n}
+    </span>
+  );
+}
+
 function LoadingNarrator() {
   const [stepIndex, setStepIndex] = useState(0);
   useEffect(() => {
@@ -234,8 +307,33 @@ export default function HomePage() {
   const [activeCategory, setActiveCategory] = useState("all");
   const [selectedTrend, setSelectedTrend] = useState(null);
   const [lastUpdated, setLastUpdated] = useState("");
+  const [toast, setToast] = useState(null);
+
+  const showToast = (msg) => setToast({ msg, id: Date.now() });
 
   useEffect(() => { fetchTrends(); }, []);
+
+  function computeMovement(currentTrends) {
+    if (typeof window === "undefined") return currentTrends;
+    let previous = [];
+    try {
+      previous = JSON.parse(localStorage.getItem("trendingPrevRanks") || "[]");
+    } catch {}
+    const prevRanks = new Map(previous.map((tag, i) => [tag, i + 1]));
+    const annotated = currentTrends.map((t, i) => {
+      const currentRank = i + 1;
+      const prevRank = prevRanks.get(t.tag);
+      let movement = "same";
+      if (!prevRank) movement = "new";
+      else if (prevRank > currentRank) movement = `up_${prevRank - currentRank}`;
+      else if (prevRank < currentRank) movement = `down_${currentRank - prevRank}`;
+      return { ...t, movement };
+    });
+    try {
+      localStorage.setItem("trendingPrevRanks", JSON.stringify(currentTrends.map((t) => t.tag)));
+    } catch {}
+    return annotated;
+  }
 
   async function fetchTrends() {
     if (trends.length > 0) setRefreshing(true);
@@ -245,7 +343,10 @@ export default function HomePage() {
       const res = await fetch("/api/trends", { cache: "no-store" });
       if (!res.ok) throw new Error(`API returned ${res.status}`);
       const data = await res.json();
-      setTrends(data.trends || []);
+      const incoming = data.trends || [];
+      const sorted = [...incoming].sort((a, b) => b.heat_score - a.heat_score);
+      const withMovement = computeMovement(sorted);
+      setTrends(withMovement);
       setMeta(data._meta || null);
       const now = new Date();
       const h = now.getHours() % 12 || 12;
@@ -272,6 +373,7 @@ export default function HomePage() {
         @keyframes fadeInCard { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
         @keyframes fadeStep { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+        @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 20px); } to { opacity: 1; transform: translate(-50%, 0); } }
       `}</style>
 
       <div style={{ position: "sticky", top: 0, zIndex: 50, background: "linear-gradient(180deg, #0C0D12 0%, #0C0D12 85%, transparent 100%)", paddingBottom: 8 }}>
@@ -330,7 +432,7 @@ export default function HomePage() {
             <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {sortedTrends.map((trend, index) => (
                 <div key={trend.id || index} style={{ animation: `fadeInCard 0.45s cubic-bezier(0.22, 1, 0.36, 1) ${index * 50}ms both` }}>
-                  <TrendCard trend={trend} index={index} onClick={() => setSelectedTrend(trend)} />
+                  <TrendCard trend={trend} index={index} onClick={() => setSelectedTrend(trend)} onCopy={showToast} />
                 </div>
               ))}
             </div>
@@ -346,7 +448,8 @@ export default function HomePage() {
         </div>
       </div>
 
-      {selectedTrend && <TrendDetail trend={selectedTrend} onBack={() => setSelectedTrend(null)} />}
+      {selectedTrend && <TrendDetail trend={selectedTrend} onBack={() => setSelectedTrend(null)} onCopy={showToast} />}
+      {toast && <Toast key={toast.id} message={toast.msg} onDone={() => setToast(null)} />}
     </div>
   );
 }

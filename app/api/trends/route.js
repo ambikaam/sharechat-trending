@@ -9,12 +9,19 @@ const GEMINI_MODEL = "gemini-2.5-flash";
 
 async function fetchGNewsCategory(category) {
   const url = `https://gnews.io/api/v4/top-headlines?category=${category}&country=in&lang=hi&max=${GNEWS_PER_CATEGORY}&apikey=${GNEWS_API_KEY}`;
+  const t0 = Date.now();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), GNEWS_TIMEOUT_MS);
   try {
     const res = await fetch(url, { cache: "no-store", signal: controller.signal });
-    if (!res.ok) return [];
+    const dt = Date.now() - t0;
+    if (!res.ok) {
+      const body = await res.text().catch(() => "");
+      console.warn(`GNews ${category} HTTP ${res.status} in ${dt}ms — body: ${body.slice(0, 200)}`);
+      return [];
+    }
     const data = await res.json();
+    console.log(`GNews ${category} OK in ${dt}ms — ${data.articles?.length || 0} articles`);
     if (!data.articles) return [];
     return data.articles.map((a) => ({
       title: a.title,
@@ -26,7 +33,7 @@ async function fetchGNewsCategory(category) {
       origin: "GNews",
     }));
   } catch (err) {
-    console.warn(`GNews ${category} error:`, err.message);
+    console.warn(`GNews ${category} ERROR in ${Date.now() - t0}ms:`, err.name, err.message);
     return [];
   } finally {
     clearTimeout(timer);
@@ -58,6 +65,7 @@ function decodeXmlEntities(s) {
 }
 
 async function fetchRSSFeed(feed) {
+  const t0 = Date.now();
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), RSS_TIMEOUT_MS);
   try {
@@ -66,7 +74,11 @@ async function fetchRSSFeed(feed) {
       signal: controller.signal,
       headers: { "User-Agent": "Mozilla/5.0 (compatible; ShareChatTrending/1.0)" },
     });
-    if (!res.ok) return [];
+    if (!res.ok) {
+      console.warn(`RSS ${feed.category} HTTP ${res.status} in ${Date.now() - t0}ms`);
+      return [];
+    }
+    console.log(`RSS ${feed.category} OK in ${Date.now() - t0}ms`);
     const text = await res.text();
     const items = text.match(/<item>[\s\S]*?<\/item>/g) || [];
     return items.slice(0, RSS_PER_FEED).reduce((acc, item) => {
@@ -86,7 +98,7 @@ async function fetchRSSFeed(feed) {
       return acc;
     }, []);
   } catch (err) {
-    console.warn("Google News RSS error:", err.message);
+    console.warn(`RSS ${feed.category} ERROR in ${Date.now() - t0}ms:`, err.name, err.message);
     return [];
   } finally {
     clearTimeout(timer);
@@ -469,7 +481,11 @@ export async function GET() {
     ];
     const gnewsCount = gnewsArticles.status === "fulfilled" ? gnewsArticles.value.length : 0;
     const rssCount = googleNewsArticles.status === "fulfilled" ? googleNewsArticles.value.length : 0;
-    console.log(`Fetched ${allArticles.length} raw articles in ${Date.now() - startTime}ms (GNews: ${gnewsCount}, RSS: ${rssCount}, GNEWS_KEY: ${GNEWS_API_KEY ? "set" : "MISSING"}, GEMINI_KEY: ${GEMINI_API_KEY ? "set" : "MISSING"})`);
+    const gnewsKeyInfo = GNEWS_API_KEY ? `set(len=${GNEWS_API_KEY.length})` : "MISSING";
+    const geminiKeyInfo = GEMINI_API_KEY ? `set(len=${GEMINI_API_KEY.length})` : "MISSING";
+    if (gnewsArticles.status === "rejected") console.error("GNews promise rejected:", gnewsArticles.reason);
+    if (googleNewsArticles.status === "rejected") console.error("RSS promise rejected:", googleNewsArticles.reason);
+    console.log(`Fetched ${allArticles.length} raw articles in ${Date.now() - startTime}ms (GNews: ${gnewsCount}, RSS: ${rssCount}, GNEWS_KEY: ${gnewsKeyInfo}, GEMINI_KEY: ${geminiKeyInfo})`);
 
     if (allArticles.length === 0) {
       return Response.json({

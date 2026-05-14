@@ -27,7 +27,7 @@ Trending tags are not a discovery feature — they're a **daily-engagement loop*
               └────────┬─────────┘
                        ▼
         ┌──────────────────────────────┐
-        │   Gemini 2.5 Flash-Lite      │  ← 25s timeout, thinkingBudget: 0
+        │   Gemini 2.5 Flash      │  ← 25s timeout, thinkingBudget: 0
         │  • semantic clustering       │
         │  • category assignment       │
         │  • Hindi localization        │
@@ -52,7 +52,7 @@ Trending tags are not a discovery feature — they're a **daily-engagement loop*
 |---|---|---|
 | Signal collection | **GNews** (India + `lang=hi`, 5 categories) | Free tier, Hindi-language headlines from real outlets, structured JSON. |
 | Backup signal | **Google News RSS** (3 Hindi feeds) | No API key — resilience layer if GNews quota dies. Different source mix, different bias. |
-| Clustering + scoring + localization | **Gemini 2.5 Flash-Lite** | One LLM call replaces three brittle services (clusterer + ranker + translator). `thinkingBudget: 0` keeps p95 under 10s on Vercel free tier. Chose Lite over Flash because thinking-mode latency made Flash time out. |
+| Clustering + scoring + localization | **Gemini 2.5 Flash** | One LLM call replaces three brittle services (clusterer + ranker + translator). `thinkingBudget: 0` disables the slow reasoning step — keeps p95 well under Vercel's 60s function timeout. Chose Flash over Pro for cost/latency; over Flash-Lite for slightly better Hindi clustering quality. |
 | Hosting | **Next.js App Router on Vercel** | Serverless API route + React in one repo, zero infra. `force-dynamic` ensures freshness on every open. |
 
 ### Scoring logic
@@ -102,7 +102,7 @@ Internet conventions (Roman hashtags) are preserved; description, "why trending"
 | Serverless / per-open invocation | Streaming pipeline + cache | The brief asks for freshness, not 10ms latency. Build for 10–14 hours of effort, not 10K QPS. |
 | One LLM for cluster+score+translate | Hand-rolled NLP + translation API | One call is more debuggable than three. Failure modes converge. |
 | GNews + Google News only | Adding X/Twitter, Reddit, YouTube | Twitter/X scraping is unreliable; YouTube quota is real but adds engineering surface. Two well-handled sources beat five flaky ones. |
-| Gemini 2.5 Flash-Lite | Flash (smarter, slower) or Pro (smartest, way slower) | Lite fits the Vercel 60s function timeout with headroom. Quality is sufficient for clustering + Hindi at this prompt. |
+| Gemini 2.5 Flash | Flash-Lite (faster, simpler) or Pro (smartest, way slower) | Flash with `thinkingBudget: 0` hits the sweet spot: 6–10s on Vercel free tier, with better Hindi clustering than Lite. |
 | Schema-matched fallback (12 trends) | Empty state or 3-item placeholder | The UI must look identical whether live data or fallback — evaluators may load on a quota-out day. |
 
 ## 6. With 4 more weeks

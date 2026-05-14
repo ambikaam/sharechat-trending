@@ -171,6 +171,35 @@ Return ONLY valid JSON (no markdown, no backticks):
 Sort by heat_score descending. Return 10-12 trends.`;
 }
 
+function repairTruncatedJSON(text) {
+  const trendsStart = text.indexOf('"trends"');
+  if (trendsStart === -1) return null;
+  const arrayStart = text.indexOf("[", trendsStart);
+  if (arrayStart === -1) return null;
+  const complete = [];
+  let depth = 0;
+  let objStart = -1;
+  let inString = false;
+  let escape = false;
+  for (let i = arrayStart + 1; i < text.length; i++) {
+    const ch = text[i];
+    if (escape) { escape = false; continue; }
+    if (ch === "\\") { escape = true; continue; }
+    if (ch === '"') { inString = !inString; continue; }
+    if (inString) continue;
+    if (ch === "{") { if (depth === 0) objStart = i; depth++; }
+    else if (ch === "}") {
+      depth--;
+      if (depth === 0 && objStart !== -1) {
+        try { complete.push(JSON.parse(text.slice(objStart, i + 1))); } catch {}
+        objStart = -1;
+      }
+    }
+  }
+  if (complete.length === 0) return null;
+  return { generated_at: new Date().toISOString(), trends: complete };
+}
+
 async function processWithGemini(rawArticles) {
   if (!GEMINI_API_KEY) {
     console.error("GEMINI_API_KEY not set");
@@ -190,7 +219,7 @@ async function processWithGemini(rawArticles) {
         contents: [{ parts: [{ text: prompt }] }],
         generationConfig: {
           temperature: 0.7,
-          maxOutputTokens: 3072,
+          maxOutputTokens: 8192,
           responseMimeType: "application/json",
           thinkingConfig: { thinkingBudget: 0 },
         },
@@ -203,7 +232,17 @@ async function processWithGemini(rawArticles) {
     const data = await res.json();
     const responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
     const cleaned = responseText.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
-    return JSON.parse(cleaned);
+    try {
+      return JSON.parse(cleaned);
+    } catch (parseErr) {
+      const repaired = repairTruncatedJSON(cleaned);
+      if (repaired) {
+        console.warn("Gemini JSON was truncated, repaired to", repaired.trends?.length, "complete trends");
+        return repaired;
+      }
+      console.error("Gemini JSON parse failed:", parseErr.message);
+      return null;
+    }
   } catch (err) {
     console.error("Gemini processing error:", err.message);
     return null;
@@ -428,7 +467,9 @@ export async function GET() {
       ...(gnewsArticles.status === "fulfilled" ? gnewsArticles.value : []),
       ...(googleNewsArticles.status === "fulfilled" ? googleNewsArticles.value : []),
     ];
-    console.log(`Fetched ${allArticles.length} raw articles in ${Date.now() - startTime}ms`);
+    const gnewsCount = gnewsArticles.status === "fulfilled" ? gnewsArticles.value.length : 0;
+    const rssCount = googleNewsArticles.status === "fulfilled" ? googleNewsArticles.value.length : 0;
+    console.log(`Fetched ${allArticles.length} raw articles in ${Date.now() - startTime}ms (GNews: ${gnewsCount}, RSS: ${rssCount}, GNEWS_KEY: ${GNEWS_API_KEY ? "set" : "MISSING"}, GEMINI_KEY: ${GEMINI_API_KEY ? "set" : "MISSING"})`);
 
     if (allArticles.length === 0) {
       return Response.json({
